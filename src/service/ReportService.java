@@ -4,6 +4,7 @@ import model.LabSection;
 import repository.IRepository;
 import java.util.List;
 import java.util.stream.Collectors;
+import model.Schedule;
 
 public class ReportService implements IReport {
     private final IRepository repository;
@@ -19,8 +20,33 @@ public class ReportService implements IReport {
         if (sections.isEmpty()) return "No sections found to generate schedule report.";
 
         String schedule = "--- Weekly Lab Schedule Report ---\n";
+
         schedule += sections.stream()
-                .map(s -> "Section: " + s.getSectionID() + ", Course: " + s.getCourseID() + ", Instructor: " + s.getInstructorID())
+                .map(s -> {
+                    // Determine the schedule detail
+                    Schedule weeklySchedule = s.getSchedule(); // Assuming getSchedule() exists in LabSection
+                    String scheduleDetail;
+
+                    if (weeklySchedule != null) {
+                        scheduleDetail = String.format(
+                                "%s, %s - %s",
+                                weeklySchedule.getDay(),
+                                weeklySchedule.getExpectedStartTime(),
+                                weeklySchedule.getExpectedEndTime()
+                        );
+                    } else {
+                        scheduleDetail = "Not Scheduled";
+                    }
+
+                    // Format the final report line
+                    return String.format(
+                            "Section: %s | Course: %s | Instructor: %s | Schedule: %s",
+                            s.getSectionID(),
+                            s.getCourseID(),
+                            s.getInstructorID(),
+                            scheduleDetail
+                    );
+                })
                 .collect(Collectors.joining("\n"));
 
         return schedule;

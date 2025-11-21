@@ -68,4 +68,8 @@ public class LabSection implements Serializable {
     public String getInstructorID() {
         return instructorID;
     }
+
+    public Schedule getSchedule() {
+        return schedule;
+    }
 }
