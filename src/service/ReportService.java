@@ -33,15 +33,41 @@ public class ReportService implements IReport {
                 "Report for attendants' recorded hours. (Implementation placeholder)", startDate);
     }
 
+    // Inside src/service/ReportService.java
+
+// ... existing code ...
+
     @Override
     public String generateSemesterReport(String sectionID) {
         LabSection section = repository.getSectionByID(sectionID);
         if (section == null) return "Error: Section " + sectionID + " not found for semester report.";
 
-        return String.format("--- Semester Report for %s ---\n" +
+        // 1. Build the detailed session list string
+        StringBuilder sessionDetails = new StringBuilder("\nSession Details:\n");
+
+        if (section.getSessions().isEmpty()) {
+            sessionDetails.append("  No sessions recorded yet.\n");
+        } else {
+            // Iterate through all sessions and append their date and status
+            section.getSessions().stream()
+                    .forEach(session -> {
+                        sessionDetails.append(String.format("  Date: %s | Status: %s\n",
+                                session.getDate(), session.getStatus()));
+                    });
+        }
+
+        // 2. Combine all report parts
+        return String.format(
+                "--- Semester Report for %s ---\n" +
+                        "Course ID: %s\n" +
                         "Total Sessions: %d\n" +
-                        "Instructor: %s\n" +
-                        "Report Summary: Excellent performance. (Implementation placeholder)",
-                sectionID, section.getSessions().size(), section.getInstructorID());
+                        "Instructor ID: %s\n" +
+                        "%s" ,
+                sectionID,
+                section.getCourseID(), // Added Course ID for context
+                section.getSessions().size(),
+                section.getInstructorID(),
+                sessionDetails.toString()
+        );
     }
 }

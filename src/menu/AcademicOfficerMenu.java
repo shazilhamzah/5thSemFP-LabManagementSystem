@@ -17,7 +17,7 @@ public class AcademicOfficerMenu implements IMenu {
         do {
             System.out.println("\n--- Academic Officer Menu ---");
             System.out.println("1. Create Lab Section");
-            System.out.println("2. Assign Instructor to Section");
+            System.out.println("2. Assign Instructor");
             System.out.println("3. Add TA to Section");
             System.out.println("4. Schedule Makeup Session");
             System.out.println("0. Logout");
@@ -53,10 +53,14 @@ public class AcademicOfficerMenu implements IMenu {
                         else System.out.println("Invalid input format.");
                         break;
                     case 0:
-                        System.out.println("Logging out...");
-                        break;
+                        return; // Exit the loop and return to LoginMenu
                     default:
                         System.out.println("Invalid choice. Try again.");
+                }
+
+                if (choice != 0) {
+                    System.out.print("\nPress Enter to return to the AO menu...");
+                    scanner.nextLine();
                 }
             } else {
                 scanner.nextLine(); // Consume invalid input

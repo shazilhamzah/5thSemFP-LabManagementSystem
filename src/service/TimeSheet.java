@@ -1,5 +1,6 @@
 package service;
 
+import model.*; // Import LabSection, Session, ClassStatus
 import repository.IRepository;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -13,11 +14,10 @@ public class TimeSheet implements ITimeSheet {
 
     @Override
     public void fillTimeSheet(String attendantID, String sectionID, String dateStr, String start, String end) {
-        // 1. Basic Validation: Is the attendant responsible for this section's building?
-        // This requires getting the section's room, the room's building, and checking the building's attendant ID.
 
-        // Simplified validation for demonstration:
-        if (repository.getSectionByID(sectionID) == null) {
+        LabSection section = repository.getSectionByID(sectionID);
+
+        if (section == null) {
             System.out.println("Error: Section " + sectionID + " not found.");
             return;
         }
@@ -25,21 +25,27 @@ public class TimeSheet implements ITimeSheet {
         try {
             LocalDate date = LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE);
 
-            // In a real system, this would write a record to a separate TimeSheet data structure.
-            // For now, we simulate the action.
+            // 1. CHECK IF SESSION EXISTS OR CREATE NEW ONE
+            Session session = section.getSessionbyDate(date);
+
+            if (session == null) {
+                // If this is the first time logging attendance for this date, create a new session.
+                session = new Session(date);
+                section.addSession(session);
+            }
+
+            // 2. UPDATE THE SESSION STATUS (assuming filling timesheet means class was completed)
+            session.setStatus(ClassStatus.Completed);
+
+            // 3. UPDATE THE REPOSITORY
+            repository.updateSection(section);
+
             System.out.println("SUCCESS: TimeSheet filled by " + attendantID + " for " + sectionID +
                     " on " + dateStr + " (" + start + " to " + end + ").");
-
-            // OPTIONAL: Update the section's session status to 'Completed' here if logging attendance.
-            // LabSection section = repository.getSectionByID(sectionID);
-            // Session session = section.getSessionbyDate(date);
-            // if (session != null) {
-            //     session.setStatus(ClassStatus.Completed);
-            //     repository.updateSection(section);
-            // }
+            System.out.println("(Session count updated in report.)");
 
         } catch (Exception e) {
-            System.out.println("Error: Invalid date format. Use YYYY-MM-DD.");
+            System.out.println("Error: Invalid date format. Use YYYY-MM-DD. " + e.getMessage());
         }
     }
 }

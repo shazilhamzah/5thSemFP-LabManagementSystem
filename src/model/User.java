@@ -7,7 +7,7 @@ public class User implements Serializable {
 
     private String userID;
     private String name;
-    private String password; // In a real app, store a hash, not plain text.
+    private String password;
     private Role role;
 
     public User(String userID, String name, String password, Role role) {

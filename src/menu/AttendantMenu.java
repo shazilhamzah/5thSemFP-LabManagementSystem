@@ -34,8 +34,15 @@ public class AttendantMenu implements IMenu {
                     } else {
                         System.out.println("Invalid input format.");
                     }
-                } else if (choice != 0) {
+                } else if (choice == 0) {
+                    return; // Exit the loop and return to LoginMenu
+                } else {
                     System.out.println("Invalid choice. Try again.");
+                }
+
+                if (choice != 0) {
+                    System.out.print("\nPress Enter to return to the Attendant menu...");
+                    scanner.nextLine();
                 }
             } else {
                 scanner.nextLine();

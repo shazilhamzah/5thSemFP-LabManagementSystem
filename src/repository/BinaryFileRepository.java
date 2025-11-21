@@ -26,23 +26,72 @@ public class BinaryFileRepository implements IRepository {
     private final String CourseFile = "courses.dat";
 
     public BinaryFileRepository() {
-        // Initialize with dummy data for testing if files don't exist
-        initializeDummyData();
         loadData();
+        if (userCache.isEmpty()) {
+            initializeDummyData();
+            saveData();
+        }
+        userCache.forEach((k, v) ->
+                System.out.println(k + " -> " + v.getName() + " (" + v.getRole() + ")")
+        );
     }
 
+
     private void initializeDummyData() {
-        // Only initialize if caches are empty (assuming file load failed or is first run)
         if (userCache.isEmpty()) {
-            userCache.put("I101", new User("I101", "Dr. Smith", "pass123", Role.Instructor));
-            buildingCache.put("B01", new Building("B01", "Main Lab Block", "A202"));
-            roomCache.put("R001", new Room("R001", "G-01", "B01"));
-            courseCache.put("CS101", new LabCourse("CS101", "Intro to Programming Lab"));
-            LabSection section = new LabSection("S001", "CS101", "R001");
-            section.setInstructor("I101");
-            sectionCache.put("S001", section);
+
+            // --- HOD ---
+            userCache.put("H1", new User("H1", "Kashif Zafar", "pass123", Role.HOD));
+
+            // --- Academic Officer ---
+            userCache.put("AO1", new User("AO1", "Mr. Ahmed", "pass123", Role.AcademicOfficer));
+
+            // --- Instructors ---
+            userCache.put("I1", new User("I1", "Dr. Smith", "pass123", Role.Instructor));
+            userCache.put("I2", new User("I2", "Dr. Sarah", "pass123", Role.Instructor));
+            userCache.put("I3", new User("I3", "Dr. Ali", "pass123", Role.Instructor));
+
+            // --- Attendants ---
+            userCache.put("A1", new User("A1", "Attendant Aslam", "pass123", Role.Attendant));
+            userCache.put("A2", new User("A2", "Attendant Bilal", "pass123", Role.Attendant));
+            userCache.put("A3", new User("A3", "Attendant Hussain", "pass123", Role.Attendant));
+
+            // --- Teaching Assistants ---
+            userCache.put("T1", new User("T1", "TA Umar", "pass123", Role.TA));
+            userCache.put("T2", new User("T2", "TA Aysha", "pass123", Role.TA));
+            userCache.put("T3", new User("T3", "TA Hamza", "pass123", Role.TA));
+
+
+            // --- Buildings ---
+            buildingCache.put("B1", new Building("B1", "Main Lab Block", "A1"));
+            buildingCache.put("B2", new Building("B2", "CS Department Labs", "A2"));
+            buildingCache.put("B3", new Building("B3", "Engineering Lab Wing", "A3"));
+
+            // --- Rooms ---
+            roomCache.put("R1", new Room("R1", "G-01", "B1"));
+            roomCache.put("R2", new Room("R2", "G-05", "B2"));
+            roomCache.put("R3", new Room("R3", "F-12", "B3"));
+
+            // --- Lab Courses ---
+            courseCache.put("CS1", new LabCourse("CS1", "Intro to Programming Lab"));
+            courseCache.put("CS2", new LabCourse("CS2", "Data Structures Lab"));
+            courseCache.put("CS3", new LabCourse("CS3", "Operating Systems Lab"));
+
+            // --- Sections ---
+            LabSection s1 = new LabSection("S1", "CS1", "R1");
+            s1.setInstructor("I1");
+            sectionCache.put("S1", s1);
+
+            LabSection s2 = new LabSection("S2", "CS2", "R2");
+            s2.setInstructor("I2");
+            sectionCache.put("S2", s2);
+
+            LabSection s3 = new LabSection("S3", "CS3", "R3");
+            s3.setInstructor("I3");
+            sectionCache.put("S3", s3);
         }
     }
+
 
     // Private helper method for serialization (to keep load/save methods clean)
     private <T> void serializeMap(Map<String, T> map, String fileName) {

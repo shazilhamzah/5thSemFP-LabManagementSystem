@@ -9,7 +9,7 @@ import service.ITimeSheet;
 import java.util.Scanner;
 
 public class LoginMenu implements IMenu {
-    // Services are injected via the constructor (Dependency Injection)
+
     private final IAuth authService;
     private final IAdmin adminService;
     private final IReport reportService;
@@ -25,17 +25,18 @@ public class LoginMenu implements IMenu {
 
     @Override
     public void display() {
-        User loggedInUser = null;
-        while (loggedInUser == null) {
-            System.out.println("\n--- Lab Management System Login ---");
-            System.out.print("Enter User ID (A001/A202/H001/I101): ");
+        boolean running = true;
+        while (running) {
+            System.out.println("\n--- Login ---");
+            System.out.print("Enter username: ");
             String userID = scanner.nextLine();
-            System.out.print("Enter Password (pass123): ");
+            System.out.print("Enter password: ");
             String password = scanner.nextLine();
 
-            loggedInUser = authService.login(userID, password);
+            User loggedInUser = authService.login(userID, password);
 
             if (loggedInUser != null) {
+                System.out.println("\nWelcome to Lab Management System");
                 launchUserMenu(loggedInUser);
             }
         }
@@ -45,12 +46,12 @@ public class LoginMenu implements IMenu {
         Role role = user.getRole();
         IMenu userMenu = null;
 
+        // Map user role to the specific menu
         switch (role) {
             case AcademicOfficer:
                 userMenu = new AcademicOfficerMenu(adminService);
                 break;
             case Attendant:
-                // Pass attendantID for specific menu actions
                 userMenu = new AttendantMenu(timeSheet, user.getUserID());
                 break;
             case HOD:
@@ -58,8 +59,8 @@ public class LoginMenu implements IMenu {
                 break;
             case Instructor:
             case TA:
-                // Simple placeholder menu for other roles
-                System.out.println("Welcome, " + role + " " + user.getUserID() + ". Functionality pending.");
+                // Placeholder for roles without current functionality
+                System.out.println("Menu for " + role + " (" + user.getUserID() + ") is pending.");
                 return;
             default:
                 System.out.println("Unknown role. Logging out.");
@@ -67,8 +68,8 @@ public class LoginMenu implements IMenu {
         }
 
         if (userMenu != null) {
-            userMenu.display();
-            System.out.println("\n--- Returning to Login Screen ---");
+            userMenu.display(); // This runs the submenu loop until logout (choice 0)
+            System.out.println("\nLogging out from " + role + "...");
         }
     }
 }

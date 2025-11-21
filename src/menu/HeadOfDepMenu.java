@@ -16,9 +16,9 @@ public class HeadOfDepMenu implements IMenu {
         int choice;
         do {
             System.out.println("\n--- Head of Department Menu ---");
-            System.out.println("1. Generate Weekly Schedule Report");
-            System.out.println("2. Generate Weekly TimeSheet Report");
-            System.out.println("3. Generate Semester Report for Section");
+            System.out.println("1. View Lab Schedule");
+            System.out.println("2. View Timesheet");
+            System.out.println("3. View Lab Summary");
             System.out.println("0. Logout");
             System.out.print("Enter choice: ");
 
@@ -36,18 +36,22 @@ public class HeadOfDepMenu implements IMenu {
                         System.out.println(reportService.generateWeeklyTimeSheetReport(startDate));
                         break;
                     case 3:
-                        System.out.print("Enter Section ID: ");
+                        System.out.print("Enter Section ID for summary: ");
                         String sectionID = scanner.nextLine();
                         System.out.println(reportService.generateSemesterReport(sectionID));
                         break;
                     case 0:
-                        System.out.println("Logging out...");
-                        break;
+                        return; // Exit the loop and return to LoginMenu
                     default:
                         System.out.println("Invalid choice. Try again.");
                 }
+
+                if (choice != 0) {
+                    System.out.print("\nPress Enter to return to the HOD menu...");
+                    scanner.nextLine();
+                }
             } else {
-                scanner.nextLine();
+                scanner.nextLine(); // Consume invalid input
                 choice = -1;
             }
 
