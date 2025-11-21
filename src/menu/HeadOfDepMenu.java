@@ -16,9 +16,9 @@ public class HeadOfDepMenu implements IMenu {
         int choice;
         do {
             System.out.println("\n--- Head of Department Menu ---");
-            System.out.println("1. View Lab Schedule");
-            System.out.println("2. View Timesheet");
-            System.out.println("3. View Lab Summary");
+            System.out.println("1. Generate Weekly Schedule Report");
+            System.out.println("2. Generate Weekly Timesheet Report");
+            System.out.println("3. Generate Semester Report");
             System.out.println("0. Logout");
             System.out.print("Enter choice: ");
 

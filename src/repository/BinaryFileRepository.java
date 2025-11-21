@@ -34,6 +34,7 @@ public class BinaryFileRepository implements IRepository {
         userCache.forEach((k, v) ->
                 System.out.println(k + " -> " + v.getName() + " (" + v.getRole() + ")")
         );
+        sectionCache.forEach((k, v) ->System.out.println(k));
     }
 
 
