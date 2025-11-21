@@ -1,178 +1,185 @@
 package service;
 
 import model.LabSection;
-import repository.IRepository;
-import java.util.List;
-import java.util.stream.Collectors;
-import model.Schedule;
-import model.LabSection;
 import model.Session;
-import model.ClassStatus; // Needed to filter for completed sessions
+import model.Schedule;
+import model.ClassStatus;
 import repository.IRepository;
-import java.time.DayOfWeek;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ReportService implements IReport {
     private final IRepository repository;
+    private static final String REPORT_DIRECTORY = "reports";
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     public ReportService(IRepository repository) {
         this.repository = repository;
     }
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    // Reports are simplified to basic string generation for the console application.
+    // --- Helper for Directory Creation ---
+    private String ensureDirectory() {
+        File directory = new File(REPORT_DIRECTORY);
+        if (!directory.exists()) {
+            if (!directory.mkdirs()) {
+                return "ERROR: Failed to create report directory: " + REPORT_DIRECTORY;
+            }
+        }
+        return null; // Null indicates success
+    }
+
+    // --- 1. Weekly Schedule Report (Already updated, included for completeness) ---
+
     @Override
     public String generateWeeklyScheduleReport() {
         List<LabSection> sections = repository.getAllSections();
+        String directoryError = ensureDirectory();
+        if (directoryError != null) return directoryError;
+
+        String fileName = REPORT_DIRECTORY + "/WeeklyScheduleReport_" + System.currentTimeMillis() + ".csv";
+
         if (sections.isEmpty()) return "No sections found to generate schedule report.";
 
-        String schedule = "--- Weekly Lab Schedule Report ---\n";
+        try (PrintWriter pw = new PrintWriter(new FileWriter(fileName))) {
 
-        schedule += sections.stream()
-                .map(s -> {
-                    // Determine the schedule detail
-                    Schedule weeklySchedule = s.getSchedule(); // Assuming getSchedule() exists in LabSection
-                    String scheduleDetail;
+            pw.println("SectionID,CourseID,InstructorID,Day,StartTime,EndTime");
 
-                    if (weeklySchedule != null) {
-                        scheduleDetail = String.format(
-                                "%s, %s - %s",
-                                weeklySchedule.getDay(),
-                                weeklySchedule.getExpectedStartTime(),
-                                weeklySchedule.getExpectedEndTime()
-                        );
-                    } else {
-                        scheduleDetail = "Not Scheduled";
-                    }
+            for (LabSection s : sections) {
+                Schedule weeklySchedule = s.getSchedule();
 
-                    // Format the final report line
-                    return String.format(
-                            "Section: %s | Course: %s | Instructor: %s | Schedule: %s",
-                            s.getSectionID(),
-                            s.getCourseID(),
-                            s.getInstructorID(),
-                            scheduleDetail
-                    );
-                })
-                .collect(Collectors.joining("\n"));
+                String day = "N/A";
+                String startTime = "N/A";
+                String endTime = "N/A";
 
-        return schedule;
+                if (weeklySchedule != null) {
+                    day = weeklySchedule.getDay().toString();
+                    startTime = weeklySchedule.getExpectedStartTime().format(TIME_FORMATTER);
+                    endTime = weeklySchedule.getExpectedEndTime().format(TIME_FORMATTER);
+                }
+
+                String line = String.format("%s,%s,%s,%s,%s,%s",
+                        s.getSectionID(),
+                        s.getCourseID(),
+                        s.getInstructorID(),
+                        day,
+                        startTime,
+                        endTime
+                );
+                pw.println(line);
+            }
+
+            return "SUCCESS: Weekly Schedule Report generated successfully at " + fileName;
+
+        } catch (IOException e) {
+            System.err.println("Error writing CSV file: " + e.getMessage());
+            return "ERROR: Failed to generate report due to file writing issue.";
+        }
     }
+
+    // --- 2. Weekly TimeSheet Report (Updated for CSV) ---
 
     @Override
     public String generateWeeklyTimeSheetReport(String startDateStr) {
+        String directoryError = ensureDirectory();
+        if (directoryError != null) return directoryError;
 
-        // 1. Define Reporting Period
         LocalDate startDate;
         try {
             startDate = LocalDate.parse(startDateStr, DATE_FORMATTER);
-            // Ensure the report week starts on a Monday (or use the provided start date)
-            // For simplicity, we'll assume startDate is the Monday of the week.
         } catch (Exception e) {
             return "Error: Invalid start date format. Use YYYY-MM-DD.";
         }
 
-        // Define the week boundaries (start date inclusive, end date exclusive)
         LocalDate endDate = startDate.plusDays(7);
-
-        StringBuilder report = new StringBuilder();
-        report.append(String.format("--- Weekly TimeSheet Report (%s to %s) ---\n", startDate, endDate.minusDays(1)));
-
         List<LabSection> allSections = repository.getAllSections();
 
-        if (allSections.isEmpty()) {
-            report.append("No lab sections found in the system.\n");
-            return report.toString();
+        String fileName = REPORT_DIRECTORY + "/WeeklyTimeSheetReport_" + startDateStr + "_" + System.currentTimeMillis() + ".csv";
+
+        try (PrintWriter pw = new PrintWriter(new FileWriter(fileName))) {
+
+            // Write Header Row
+            pw.println("SectionID,CourseID,InstructorID,SessionDate,Status,AttendedWeekStart");
+
+            // Process and write data
+            for (LabSection section : allSections) {
+                for (Session session : section.getSessions()) {
+                    LocalDate sessionDate = session.getDate();
+
+                    // Filter by date range and status (Attendant sets status to Completed)
+                    boolean isInWeek = sessionDate.isEqual(startDate) ||
+                            sessionDate.isAfter(startDate) &&
+                                    sessionDate.isBefore(endDate);
+
+                    if (isInWeek && session.getStatus() == ClassStatus.Completed) {
+
+                        String line = String.format("%s,%s,%s,%s,%s,%s",
+                                section.getSectionID(),
+                                section.getCourseID(),
+                                section.getInstructorID(),
+                                sessionDate.format(DATE_FORMATTER),
+                                session.getStatus().name(),
+                                startDate.format(DATE_FORMATTER)
+                        );
+                        pw.println(line);
+                    }
+                }
+            }
+
+            return "SUCCESS: Weekly TimeSheet Report generated successfully at " + fileName;
+
+        } catch (IOException e) {
+            System.err.println("Error writing CSV file: " + e.getMessage());
+            return "ERROR: Failed to generate report due to file writing issue.";
         }
-
-        // Map to group completed sessions by the section they belong to
-        Map<LabSection, List<Session>> attendedSessions = allSections.stream()
-                .collect(Collectors.toMap(
-                        section -> section,
-                        section -> section.getSessions().stream()
-                                .filter(session -> {
-                                    LocalDate sessionDate = session.getDate();
-                                    // Filter by date range and status (Attendant sets status to Completed)
-                                    return sessionDate.isEqual(startDate) ||
-                                            sessionDate.isAfter(startDate) &&
-                                                    sessionDate.isBefore(endDate) &&
-                                                    session.getStatus() == ClassStatus.Completed;
-                                })
-                                .collect(Collectors.toList())
-                ))
-                // Remove sections that had no attended sessions this week
-                .entrySet().stream()
-                .filter(entry -> !entry.getValue().isEmpty())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-
-        // 2. Format the Report Output
-        if (attendedSessions.isEmpty()) {
-            report.append("No attended sessions recorded for this week.\n");
-            return report.toString();
-        }
-
-        report.append("Attended Labs (Recorded by Attendants):\n");
-
-        for (Map.Entry<LabSection, List<Session>> entry : attendedSessions.entrySet()) {
-            LabSection section = entry.getKey();
-            List<Session> sessions = entry.getValue();
-
-            report.append(String.format("\nSection: %s (Course: %s, Instructor: %s)\n",
-                    section.getSectionID(),
-                    section.getCourseID(),
-                    section.getInstructorID()));
-
-            sessions.forEach(session -> {
-                report.append(String.format("  -> Date: %s | Status: %s\n",
-                        session.getDate().format(DATE_FORMATTER),
-                        session.getStatus()));
-            });
-        }
-
-        return report.toString();
     }
 
-    // Inside src/service/ReportService.java
-
-// ... existing code ...
+    // --- 3. Semester Report (Updated for CSV) ---
 
     @Override
     public String generateSemesterReport(String sectionID) {
         LabSection section = repository.getSectionByID(sectionID);
         if (section == null) return "Error: Section " + sectionID + " not found for semester report.";
 
-        // 1. Build the detailed session list string
-        StringBuilder sessionDetails = new StringBuilder("\nSession Details:\n");
+        String directoryError = ensureDirectory();
+        if (directoryError != null) return directoryError;
 
-        if (section.getSessions().isEmpty()) {
-            sessionDetails.append("  No sessions recorded yet.\n");
-        } else {
-            // Iterate through all sessions and append their date and status
-            section.getSessions().stream()
-                    .forEach(session -> {
-                        sessionDetails.append(String.format("  Date: %s | Status: %s\n",
-                                session.getDate(), session.getStatus()));
-                    });
+        String fileName = REPORT_DIRECTORY + "/SemesterReport_" + sectionID + "_" + System.currentTimeMillis() + ".csv";
+
+        try (PrintWriter pw = new PrintWriter(new FileWriter(fileName))) {
+
+            // Write metadata header (using a comment line start with #)
+            pw.println("#Semester Report for Section," + sectionID);
+            pw.println("#Course ID," + section.getCourseID());
+            pw.println("#Instructor ID," + section.getInstructorID());
+            pw.println("#Total Sessions," + section.getSessions().size());
+            pw.println(); // Blank line for separation
+
+            // Write session details header
+            pw.println("SessionDate,Status,Instructor");
+
+            // Write session details data
+            for (Session session : section.getSessions()) {
+                String line = String.format("%s,%s,%s",
+                        session.getDate().format(DATE_FORMATTER),
+                        session.getStatus().name(),
+                        section.getInstructorID() // Instructor is repeated for every session line
+                );
+                pw.println(line);
+            }
+
+            return "SUCCESS: Semester Report generated successfully at " + fileName;
+
+        } catch (IOException e) {
+            System.err.println("Error writing CSV file: " + e.getMessage());
+            return "ERROR: Failed to generate report due to file writing issue.";
         }
-
-        // 2. Combine all report parts
-        return String.format(
-                "--- Semester Report for %s ---\n" +
-                        "Course ID: %s\n" +
-                        "Total Sessions: %d\n" +
-                        "Instructor ID: %s\n" +
-                        "%s" ,
-                sectionID,
-                section.getCourseID(), // Added Course ID for context
-                section.getSessions().size(),
-                section.getInstructorID(),
-                sessionDetails.toString()
-        );
     }
 }
