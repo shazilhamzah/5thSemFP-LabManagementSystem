@@ -17,4 +17,7 @@ public interface IRepository {
     List<LabSection> getAllSections();
     void updateSection(LabSection section);
     void addSection(LabSection section);
+
+    Room getRoomByID(String roomID);
+    LabCourse getCourseByID(String courseID);
 }

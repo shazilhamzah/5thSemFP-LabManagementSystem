@@ -183,4 +183,14 @@ public class BinaryFileRepository implements IRepository {
         sectionCache.put(section.getSectionID(), section);
         saveData(); // Save changes immediately
     }
+
+    @Override
+    public Room getRoomByID(String roomID) {
+        return roomCache.get(roomID);
+    }
+
+    @Override
+    public LabCourse getCourseByID(String courseID) {
+        return courseCache.get(courseID);
+    }
 }
